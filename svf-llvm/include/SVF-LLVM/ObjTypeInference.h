@@ -82,7 +82,12 @@ public:
     /// pointer type
     inline const Type *ptrType()
     {
+#if LLVM_VERSION_MAJOR >= 15
+        // In LLVM 15+, use typed pointers (i8*) instead of opaque pointers
+        return PointerType::get(Type::getInt8Ty(getLLVMCtx()), 0);
+#else
         return PointerType::getUnqual(getLLVMCtx());
+#endif
     }
 
     /// int8 type

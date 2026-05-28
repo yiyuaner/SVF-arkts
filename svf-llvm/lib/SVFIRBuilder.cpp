@@ -1822,9 +1822,15 @@ NodeID SVFIRBuilder::getGepValVar(const Value* val, const AccessPath& ap, const 
             // GEP on a global variable: the resulting GepValVar belongs to the global ICFG node.
             node = pag->getICFG()->getGlobalICFGNode();
         }
+#if LLVM_VERSION_MAJOR >= 15
+        // In LLVM 15+, use typed pointers (i8*) instead of opaque pointers
+        Type* ptrType = PointerType::get(IntegerType::getInt8Ty(llvmmodule->getContext()), 0);
+#else
+        Type* ptrType = PointerType::getUnqual(llvmmodule->getContext());
+#endif
         NodeID gepNode = pag->addGepValNode(llvmModuleSet()->getValueNode(curVal), cast<ValVar>(pag->getGNode(getValueNode(val))), ap,
                                             NodeIDAllocator::get()->allocateValueId(),
-                                            llvmmodule->getSVFType(PointerType::getUnqual(llvmmodule->getContext())), node);
+                                            llvmmodule->getSVFType(ptrType), node);
         addGepEdge(base, gepNode, ap, true);
         setCurrentLocation(cval, cbb);
         return gepNode;

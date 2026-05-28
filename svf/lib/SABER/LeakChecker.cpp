@@ -48,7 +48,11 @@ void LeakChecker::initSrcs()
         /// if this callsite return reside in a dead function then we do not care about its leaks
         /// for example instruction `int* p = malloc(size)` is in a dead function, then program won't allocate this memory
         /// for example a customized malloc `int p = malloc()` returns an integer value, then program treat it as a system malloc
-        if(cs->getFun()->isUncalledFunction() || !cs->getType()->isPointerTy())
+        // ArkTS: Disabled dead function filter because indirect calls via !ark.callee.name
+        // are not resolved in the callgraph, causing reachable functions to appear uncalled.
+        // if(cs->getFun()->isUncalledFunction() || !cs->getType()->isPointerTy())
+        //     continue;
+        if (!cs->getType()->isPointerTy())
             continue;
 
         CallGraph::FunctionSet callees;
@@ -85,13 +89,42 @@ void LeakChecker::initSrcs()
                     // otherwise, this is the source we are interested
                     else
                     {
-                        // exclude sources in dead functions or sources in functions that have summary
-                        if (!cs->getFun()->isUncalledFunction() && !isExtCall(cs->getBB()->getParent()))
+                        // exclude sources in functions that have summary
+                        // ArkTS: Removed dead function check (see above)
+                        if (!isExtCall(cs->getBB()->getParent()))
                         {
                             addToSources(node);
                             addSrcToCSID(node, cs);
+                            // Debug: log ArkTS API sources
+                            if (fun->getName().find("@ohos:") != std::string::npos)
+                            {
+                                SVFUtil::outs() << "[ArkTS Source] " << fun->getName()
+                                               << " at " << cs->getSourceLoc() << "\n";
+                            }
                         }
                     }
+                }
+            }
+        }
+
+        // ArkTS: Handle indirect allocation calls with !ark.callee.name metadata.
+        // Similar to initSnks(), if the callgraph doesn't resolve the indirect call,
+        // check if the call target name matches a known allocator.
+        const CallICFGNode* callNode = cs->getCallICFGNode();
+        if (callees.empty() && callNode->isIndirectCall())
+        {
+            const std::string& arkName = callNode->getArkCalleeName();
+            if (SaberCheckerAPI::getCheckerAPI()->isMemAlloc(arkName))
+            {
+                SVFUtil::outs() << "[ArkTS Indirect Source] method name: " << arkName
+                               << " at " << callNode->getSourceLoc() << "\n";
+                const RetICFGNode* retBlockNode = cs;
+                const ValVar* svfVar = pag->getCallSiteRet(retBlockNode);
+                const SVFGNode* node = getSVFG()->getDefSVFGNode(svfVar);
+                if (!isExtCall(callNode->getBB()->getParent()))
+                {
+                    addToSources(node);
+                    addSrcToCSID(node, callNode);
                 }
             }
         }
@@ -129,6 +162,12 @@ void LeakChecker::initSnks()
                     {
                         const SVFGNode *snk = getSVFG()->getActualParmVFGNode(svfVar, it->first);
                         addToSinks(snk);
+                        // Debug: log ArkTS API sinks
+                        if (fun->getName().find("@ohos:") != std::string::npos)
+                        {
+                            SVFUtil::outs() << "[ArkTS Sink] " << fun->getName()
+                                           << " at " << it->first->getSourceLoc() << "\n";
+                        }
 
                         // For any multi-level pointer e.g., XFree(void** svfVar) that passed into a ExtAPI::EFT_FREE_MULTILEVEL function (e.g., XFree),
                         // we will add the DstNode of a load edge, i.e., dummy = *svfVar
@@ -138,6 +177,35 @@ void LeakChecker::initSnks()
                             if(SVFUtil::isa<DummyValVar>(ld->getDstNode()))
                                 addToSinks(getSVFG()->getStmtVFGNode(ld));
                         }
+                    }
+                }
+            }
+        }
+
+        // ArkTS: indirect method calls (e.g. `obj.release()`) appear with no
+        // resolved callees. panda2llvm preserves the method name on the call
+        // instruction as `!ark.callee.name` metadata (carried into the
+        // CallICFGNode as `arkCalleeName`). If that name matches a known
+        // deallocator, treat the call as a sink and register the receiver
+        // ('this') as the freed value.
+        const CallICFGNode* cs = it->first;
+        if (callees.empty() && cs->isIndirectCall())
+        {
+            const std::string& arkName = cs->getArkCalleeName();
+            if (SaberCheckerAPI::getCheckerAPI()->isMemDeallocByName(arkName))
+            {
+                SVFUtil::outs() << "[ArkTS Indirect Sink] method name: " << arkName
+                               << " at " << cs->getSourceLoc() << "\n";
+                SVFIR::ValVarList& arglist = it->second;
+                // ArkTS calling convention: method(funcObj, newTarget, this, ...userArgs)
+                // The receiver ('this') is at argument index 2.
+                if (arglist.size() > 2)
+                {
+                    const SVFVar* recv = arglist[2];
+                    if (recv->isPointer())
+                    {
+                        const SVFGNode* snk = getSVFG()->getActualParmVFGNode(recv, cs);
+                        addToSinks(snk);
                     }
                 }
             }

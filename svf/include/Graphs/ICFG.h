@@ -179,12 +179,13 @@ protected:
     virtual inline CallICFGNode* addCallICFGNode(
         const SVFBasicBlock* bb, const SVFType* ty,
         const FunObjVar* calledFunc, bool isVararg, bool isvcall,
-        s32_t vcallIdx, const std::string& funNameOfVcall)
+        s32_t vcallIdx, const std::string& funNameOfVcall,
+        const std::string& arkCalleeName = "")
     {
 
         CallICFGNode* callICFGNode =
             new CallICFGNode(totalICFGNode++, bb, ty, calledFunc, isVararg,
-                             isvcall, vcallIdx, funNameOfVcall);
+                             isvcall, vcallIdx, funNameOfVcall, arkCalleeName);
         addICFGNode(callICFGNode);
         return callICFGNode;
     }

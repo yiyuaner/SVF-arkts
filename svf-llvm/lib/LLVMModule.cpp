@@ -358,6 +358,10 @@ void LLVMModuleSet::loadModules(const std::vector<std::string> &moduleNameVec)
     // module instance; see the comment(s) in `buildSVFModule` and `loadExtAPIModules()`
 
     owned_ctx = std::make_unique<LLVMContext>();
+#if LLVM_VERSION_MAJOR >= 15
+    // Disable opaque pointers for LLVM 15+ to support typed pointer bitcode
+    owned_ctx->setOpaquePointers(false);
+#endif
     for (const std::string& moduleName : moduleNameVec)
     {
         if (!LLVMUtil::isIRFile(moduleName))
@@ -551,7 +555,12 @@ void LLVMModuleSet::addSVFMain()
         assert(mainMod && "Module with main function not found.");
         Module& M = *mainMod;
         // char **
+#if LLVM_VERSION_MAJOR >= 15
+        // In LLVM 15+, use typed pointers (i8*) instead of opaque pointers
+        Type* ptr = PointerType::get(IntegerType::getInt8Ty(M.getContext()), 0);
+#else
         Type* ptr = PointerType::getUnqual(M.getContext());
+#endif
         Type* i32 = IntegerType::getInt32Ty(M.getContext());
         // define void @svf.main(i32, i8**, i8**)
 #if (LLVM_VERSION_MAJOR >= 9)

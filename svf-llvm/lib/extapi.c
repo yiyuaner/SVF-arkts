@@ -1406,3 +1406,44 @@ const char *zError(int a)
 {
     return zError_global;
 }
+
+/*
+ * ArkTS resource APIs.
+ *
+ * The application IR exposes these as functions with non-C symbol names
+ * (e.g. `@ohos:file.fs.fs.openSync`).  Because C identifiers cannot contain
+ * `@`, `:`, or `.`, we declare normal C stubs and attach the real link names
+ * via the GCC/Clang asm-label syntax.  The annotations propagate to the
+ * underlying symbol so that SVF's annotation-driven heap-alloc handling
+ * recognises calls in the application as returning fresh heap objects.
+ */
+__attribute__((annotate("ALLOC_HEAP_RET"), annotate("AllocSize:UNKNOWN")))
+void *arkts_ohos_file_fs_openSync(void *funcObj, void *newTarget, void *external, void *uri) asm("@ohos:file.fs.fs.openSync");
+void *arkts_ohos_file_fs_openSync(void *funcObj, void *newTarget, void *external, void *uri)
+{
+    return NULL;
+}
+
+__attribute__((annotate("ALLOC_HEAP_RET"), annotate("AllocSize:UNKNOWN")))
+void *arkts_ohos_file_fs_open(void *funcObj, void *newTarget, void *external, void *uri, void *mode) asm("@ohos:file.fs.fs.open");
+void *arkts_ohos_file_fs_open(void *funcObj, void *newTarget, void *external, void *uri, void *mode)
+{
+    return NULL;
+}
+
+void arkts_ohos_file_fs_closeSync(void *funcObj, void *newTarget, void *external, void *file) asm("@ohos:file.fs.fs.closeSync");
+void arkts_ohos_file_fs_closeSync(void *funcObj, void *newTarget, void *external, void *file)
+{
+}
+
+void arkts_ohos_file_fs_close(void *funcObj, void *newTarget, void *external, void *file) asm("@ohos:file.fs.fs.close");
+void arkts_ohos_file_fs_close(void *funcObj, void *newTarget, void *external, void *file)
+{
+}
+
+__attribute__((annotate("ALLOC_HEAP_RET"), annotate("AllocSize:UNKNOWN")))
+void *arkts_ohos_image_createImageSource(void *funcObj, void *newTarget, void *external, void *buffer) asm("@ohos:multimedia.image.image.createImageSource");
+void *arkts_ohos_image_createImageSource(void *funcObj, void *newTarget, void *external, void *buffer)
+{
+    return NULL;
+}

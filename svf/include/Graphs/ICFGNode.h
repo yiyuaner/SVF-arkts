@@ -420,15 +420,16 @@ protected:
     s32_t virtualFunIdx;            /// virtual function index of the virtual table(s) at a virtual call
     std::string funNameOfVcall;     /// the function name of this virtual call
     const SVFVar* indFunPtr;
+    std::string arkCalleeName;      /// for ArkTS indirect calls: method name from `!ark.callee.name` metadata
 
 
 public:
     CallICFGNode(NodeID id, const SVFBasicBlock* b, const SVFType* ty,
                  const FunObjVar* cf, bool iv, bool ivc, s32_t vfi,
-                 const std::string& fnv)
+                 const std::string& fnv, const std::string& arkName = "")
         : InterICFGNode(id, FunCallBlock), ret(nullptr), calledFunc(cf),
           isvararg(iv), isVirCallInst(ivc), vtabPtr(nullptr),
-          virtualFunIdx(vfi), funNameOfVcall(fnv)
+          virtualFunIdx(vfi), funNameOfVcall(fnv), arkCalleeName(arkName)
     {
         fun = b->getFunction();
         bb = b;
@@ -534,6 +535,18 @@ public:
     {
         assert(isVirtualCall() && "not a virtual call?");
         return funNameOfVcall;
+    }
+
+    /// For ArkTS indirect method calls: returns the method name from `!ark.callee.name`
+    /// metadata (e.g. "release"). Returns an empty string for calls without this metadata.
+    inline const std::string& getArkCalleeName() const
+    {
+        return arkCalleeName;
+    }
+
+    inline void setArkCalleeName(const std::string& name)
+    {
+        arkCalleeName = name;
     }
     //@}
 

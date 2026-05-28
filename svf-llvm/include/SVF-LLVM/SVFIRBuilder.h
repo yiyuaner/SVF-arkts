@@ -281,7 +281,12 @@ protected:
     inline NodeID addNullPtrNode()
     {
         LLVMContext& cxt = llvmModuleSet()->getContext();
+#if LLVM_VERSION_MAJOR >= 15
+        // In LLVM 15+, use typed pointers (i8*) instead of opaque pointers
+        ConstantPointerNull* constNull = ConstantPointerNull::get(PointerType::get(Type::getInt8Ty(cxt), 0));
+#else
         ConstantPointerNull* constNull = ConstantPointerNull::get(PointerType::getUnqual(cxt));
+#endif
         NodeID nullPtr = pag->addConstantNullPtrValNode(pag->getNullPtr(), nullptr, llvmModuleSet()->getSVFType(constNull->getType()));
         llvmModuleSet()->addToSVFVar2LLVMValueMap(constNull, pag->getGNode(pag->getNullPtr()));
         setCurrentLocation(constNull, (SVFBasicBlock*) nullptr);

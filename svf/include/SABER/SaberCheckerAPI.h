@@ -118,6 +118,22 @@ public:
     {
         return isMemDealloc(cs->getCalledFunction());
     }
+    /// String-keyed lookup for ArkTS indirect deallocations whose callee is only
+    /// known via metadata (e.g. method name "release" from `!ark.callee.name`).
+    inline bool isMemDeallocByName(const std::string& name) const
+    {
+        if (name.empty()) return false;
+        TDAPIMap::const_iterator it = tdAPIMap.find(name);
+        return it != tdAPIMap.end() && it->second == CK_FREE;
+    }
+    /// String-keyed lookup for ArkTS indirect allocations whose callee is only
+    /// known via metadata (e.g. method name from `!ark.callee.name`).
+    inline bool isMemAlloc(const std::string& name) const
+    {
+        if (name.empty()) return false;
+        TDAPIMap::const_iterator it = tdAPIMap.find(name);
+        return it != tdAPIMap.end() && it->second == CK_ALLOC;
+    }
     //@}
 
     /// Return true if this call is a file open

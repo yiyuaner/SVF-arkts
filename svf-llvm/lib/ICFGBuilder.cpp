@@ -256,11 +256,25 @@ InterICFGNode* ICFGBuilder::addInterBlockICFGNode(const Instruction* inst)
 
     SVFBasicBlock* bb = llvmModuleSet()->getSVFBasicBlock(inst->getParent());
 
+    // For ArkTS indirect method calls, panda2llvm attaches the method name as
+    // `!ark.callee.name` metadata. Carry that string onto the CallICFGNode so
+    // leak-checker passes (which live in LLVM-agnostic SvfCore) can match it.
+    std::string arkCalleeName;
+    if (MDNode* md = cb->getMetadata("ark.callee.name"))
+    {
+        if (md->getNumOperands() > 0)
+        {
+            if (MDString* mds = SVFUtil::dyn_cast<MDString>(md->getOperand(0).get()))
+                arkCalleeName = mds->getString().str();
+        }
+    }
+
     CallICFGNode* callICFGNode = icfg->addCallICFGNode(
                                      bb, llvmModuleSet()->getSVFType(inst->getType()),
                                      calledFunc, cb->getFunctionType()->isVarArg(), isvcall,
                                      isvcall ? cppUtil::getVCallIdx(cb) : 0,
-                                     isvcall ? cppUtil::getFunNameOfVCallSite(cb) : "");
+                                     isvcall ? cppUtil::getFunNameOfVCallSite(cb) : "",
+                                     arkCalleeName);
     llvmModuleSet()->addInstructionMap(inst, callICFGNode);
 
     assert(llvmModuleSet()->getRetBlock(inst)==nullptr && "duplicate RetICFGNode");

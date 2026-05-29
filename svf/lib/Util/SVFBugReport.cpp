@@ -26,6 +26,7 @@
 //
 
 #include "Util/SVFBugReport.h"
+#include "Util/Options.h"
 #include <cassert>
 #include "Util/cJSON.h"
 #include "Util/SVFUtil.h"
@@ -47,6 +48,97 @@ const std::map<GenericBug::BugType, std::string> GenericBug::BugType2Str =
     {GenericBug::FULLNULLPTRDEREFERENCE, "Full Null Ptr Dereference"},
     {GenericBug::PARTIALNULLPTRDEREFERENCE, "Partial Null Ptr Dereference"}
 };
+
+SVFBugEvent::SVFBugEvent(u32_t typeAndInfoFlag, const ICFGNode *eventInst)
+    : typeAndInfoFlag(typeAndInfoFlag), eventInst(eventInst)
+{
+    // Extract LLVM IR instruction text
+    llvmIR = eventInst->valueOnlyToString();
+}
+
+// Helper function to parse location string into JSON object
+// Location format can be:
+// - "{ \"ln\": 42, \"cl\": 0, \"fl\": \"/path/to/file\" }"
+// - "CallICFGNode: { \"ln\": 42, \"cl\": 0, \"fl\": \"/path/to/file\" }"
+// - "IntraICFGNode42 {fun: funcName { \"ln\": 42, \"cl\": 0, \"fl\": \"/path/to/file\" }}"
+static cJSON* parseLocationToJson(const std::string& locStr)
+{
+    cJSON *location = cJSON_CreateObject();
+
+    // Try to parse as JSON first (for cases where it's already JSON)
+    cJSON *parsed = cJSON_Parse(locStr.c_str());
+    if (parsed != nullptr)
+    {
+        cJSON_Delete(location);
+        return parsed;
+    }
+
+    // Find the JSON part in the string (look for { "ln": pattern)
+    size_t jsonStart = locStr.find("{ \"ln\":");
+    if (jsonStart == std::string::npos)
+    {
+        jsonStart = locStr.find("{\"ln\":");
+    }
+
+    if (jsonStart != std::string::npos)
+    {
+        // Find the closing brace
+        size_t jsonEnd = locStr.find("}", jsonStart);
+        if (jsonEnd != std::string::npos)
+        {
+            std::string jsonPart = locStr.substr(jsonStart, jsonEnd - jsonStart + 1);
+            parsed = cJSON_Parse(jsonPart.c_str());
+            if (parsed != nullptr)
+            {
+                cJSON_Delete(location);
+                return parsed;
+            }
+        }
+    }
+
+    // Fallback: manual parsing
+    // Parse line number
+    size_t lnPos = locStr.find("ln\":");
+    if (lnPos == std::string::npos)
+        lnPos = locStr.find("ln:");
+
+    if (lnPos != std::string::npos)
+    {
+        size_t lnStart = locStr.find_first_of("0123456789", lnPos);
+        if (lnStart != std::string::npos)
+        {
+            size_t lnEnd = locStr.find_first_of(",}", lnStart);
+            if (lnEnd != std::string::npos)
+            {
+                std::string lineStr = locStr.substr(lnStart, lnEnd - lnStart);
+                int lineNum = std::atoi(lineStr.c_str());
+                cJSON_AddNumberToObject(location, "line", lineNum);
+            }
+        }
+    }
+
+    // Parse file path
+    size_t flPos = locStr.find("fl\":");
+    if (flPos == std::string::npos)
+        flPos = locStr.find("fl:");
+
+    if (flPos != std::string::npos)
+    {
+        size_t flStart = locStr.find("\"", flPos + 3);
+        if (flStart != std::string::npos)
+        {
+            flStart++; // skip opening quote
+            size_t flEnd = locStr.find("\"", flStart);
+            if (flEnd != std::string::npos)
+            {
+                std::string filePath = locStr.substr(flStart, flEnd - flStart);
+                cJSON_AddStringToObject(location, "file", filePath.c_str());
+            }
+        }
+    }
+
+    return location;
+}
 
 const std::string GenericBug::getLoc() const
 {
@@ -116,6 +208,34 @@ void BufferOverflowBug::printBugToTerminal() const
 cJSON * NeverFreeBug::getBugDescription() const
 {
     cJSON *bugDescription = cJSON_CreateObject();
+
+    // Add trace array with allocation site
+    cJSON *trace = cJSON_CreateArray();
+    for (const SVFBugEvent &event : bugEventStack)
+    {
+        cJSON *traceStep = cJSON_CreateObject();
+
+        // Event type
+        if (event.getEventType() == SVFBugEvent::SourceInst)
+        {
+            cJSON_AddStringToObject(traceStep, "type", "allocation");
+        }
+        else
+        {
+            cJSON_AddStringToObject(traceStep, "type", "unknown");
+        }
+
+        // Location
+        cJSON *location = parseLocationToJson(event.getEventLoc());
+        cJSON_AddItemToObject(traceStep, "location", location);
+
+        // LLVM IR
+        cJSON_AddStringToObject(traceStep, "llvm_ir", event.getLLVMIR().c_str());
+
+        cJSON_AddItemToArray(trace, traceStep);
+    }
+    cJSON_AddItemToObject(bugDescription, "Trace", trace);
+
     return bugDescription;
 }
 
@@ -128,6 +248,41 @@ void NeverFreeBug::printBugToTerminal() const
 cJSON * PartialLeakBug::getBugDescription() const
 {
     cJSON *bugDescription = cJSON_CreateObject();
+
+    // Add trace array with branch events and allocation site
+    cJSON *trace = cJSON_CreateArray();
+    for (const SVFBugEvent &event : bugEventStack)
+    {
+        cJSON *traceStep = cJSON_CreateObject();
+
+        // Event type
+        if (event.getEventType() == SVFBugEvent::Branch)
+        {
+            cJSON_AddStringToObject(traceStep, "type", "branch");
+            // Add branch condition
+            cJSON_AddStringToObject(traceStep, "branch_condition", event.getEventDescription().c_str());
+        }
+        else if (event.getEventType() == SVFBugEvent::SourceInst)
+        {
+            cJSON_AddStringToObject(traceStep, "type", "allocation");
+        }
+        else
+        {
+            cJSON_AddStringToObject(traceStep, "type", "unknown");
+        }
+
+        // Location
+        cJSON *location = parseLocationToJson(event.getEventLoc());
+        cJSON_AddItemToObject(traceStep, "location", location);
+
+        // LLVM IR
+        cJSON_AddStringToObject(traceStep, "llvm_ir", event.getLLVMIR().c_str());
+
+        cJSON_AddItemToArray(trace, traceStep);
+    }
+    cJSON_AddItemToObject(bugDescription, "Trace", trace);
+
+    // Keep the old ConditionalFreePath for backward compatibility
     cJSON *pathInfo = cJSON_CreateArray();
     auto lastBranchEventIt = bugEventStack.end() - 1;
     for(auto eventIt = bugEventStack.begin(); eventIt != lastBranchEventIt; eventIt++)
@@ -325,6 +480,56 @@ const std::string SVFBugEvent::getEventDescription() const
         assert(false && "No such type of event!");
         abort();
     }
+    }
+}
+
+void SVFBugReport::addSaberBug(GenericBug::BugType bugType, const GenericBug::EventStack &eventStack)
+{
+    /// create and add the bug
+    GenericBug *newBug = nullptr;
+    switch(bugType)
+    {
+    case GenericBug::NEVERFREE:
+    {
+        newBug = new NeverFreeBug(eventStack);
+        bugSet.insert(newBug);
+        break;
+    }
+    case GenericBug::PARTIALLEAK:
+    {
+        newBug = new PartialLeakBug(eventStack);
+        bugSet.insert(newBug);
+        break;
+    }
+    case GenericBug::DOUBLEFREE:
+    {
+        newBug = new DoubleFreeBug(eventStack);
+        bugSet.insert(newBug);
+        break;
+    }
+    case GenericBug::FILENEVERCLOSE:
+    {
+        newBug = new FileNeverCloseBug(eventStack);
+        bugSet.insert(newBug);
+        break;
+    }
+    case GenericBug::FILEPARTIALCLOSE:
+    {
+        newBug = new FilePartialCloseBug(eventStack);
+        bugSet.insert(newBug);
+        break;
+    }
+    default:
+    {
+        assert(false && "saber does NOT have this bug type!");
+        break;
+    }
+    }
+
+    // when add a bug, also print it to terminal (unless in JSON mode)
+    if (Options::JsonOutputPath().empty())
+    {
+        newBug->printBugToTerminal();
     }
 }
 

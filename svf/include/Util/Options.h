@@ -269,6 +269,9 @@ public:
 
     // float precision for symbolic abstraction
     static const Option<u32_t> AEPrecision;
+
+    // JSON output path for bug reports
+    static const Option<std::string> JsonOutputPath;
 };
 }  // namespace SVF
 

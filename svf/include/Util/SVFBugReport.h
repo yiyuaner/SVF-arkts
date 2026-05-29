@@ -63,9 +63,10 @@ public:
 protected:
     u32_t typeAndInfoFlag;
     const ICFGNode *eventInst;
+    std::string llvmIR;
 
 public:
-    SVFBugEvent(u32_t typeAndInfoFlag, const ICFGNode *eventInst): typeAndInfoFlag(typeAndInfoFlag), eventInst(eventInst) { };
+    SVFBugEvent(u32_t typeAndInfoFlag, const ICFGNode *eventInst);
     virtual ~SVFBugEvent() = default;
 
     inline u32_t getEventType() const
@@ -75,6 +76,10 @@ public:
     virtual const std::string getEventDescription() const;
     virtual const std::string getFuncName() const;
     virtual const std::string getEventLoc() const;
+    virtual const std::string getLLVMIR() const
+    {
+        return llvmIR;
+    }
 };
 
 class GenericBug
@@ -312,52 +317,7 @@ public:
      *      it will add the bug into bugQueue.
      * usage: addSaberBug(GenericBug::NEVERFREE, eventStack)
      */
-    void addSaberBug(GenericBug::BugType bugType, const GenericBug::EventStack &eventStack)
-    {
-        /// create and add the bug
-        GenericBug *newBug = nullptr;
-        switch(bugType)
-        {
-        case GenericBug::NEVERFREE:
-        {
-            newBug = new NeverFreeBug(eventStack);
-            bugSet.insert(newBug);
-            break;
-        }
-        case GenericBug::PARTIALLEAK:
-        {
-            newBug = new PartialLeakBug(eventStack);
-            bugSet.insert(newBug);
-            break;
-        }
-        case GenericBug::DOUBLEFREE:
-        {
-            newBug = new DoubleFreeBug(eventStack);
-            bugSet.insert(newBug);
-            break;
-        }
-        case GenericBug::FILENEVERCLOSE:
-        {
-            newBug = new FileNeverCloseBug(eventStack);
-            bugSet.insert(newBug);
-            break;
-        }
-        case GenericBug::FILEPARTIALCLOSE:
-        {
-            newBug = new FilePartialCloseBug(eventStack);
-            bugSet.insert(newBug);
-            break;
-        }
-        default:
-        {
-            assert(false && "saber does NOT have this bug type!");
-            break;
-        }
-        }
-
-        // when add a bug, also print it to terminal
-        newBug->printBugToTerminal();
-    }
+    void addSaberBug(GenericBug::BugType bugType, const GenericBug::EventStack &eventStack);
 
     /*
      * function: pass bug type (i.e., GenericBug::FULLBUFOVERFLOW) and eventStack as parameter,

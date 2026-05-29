@@ -864,4 +864,10 @@ const Option<u32_t> Options::AEPrecision(
     0
 );
 
+const Option<std::string> Options::JsonOutputPath(
+    "json-output",
+    "Output bug reports to JSON file",
+    ""
+);
+
 } // namespace SVF.

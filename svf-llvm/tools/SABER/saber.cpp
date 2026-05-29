@@ -64,6 +64,13 @@ int main(int argc, char ** argv)
         saber = std::make_unique<LeakChecker>();  // if no checker is specified, we use leak checker as the default one.
 
     saber->runOnModule(pag);
+
+    // If JSON output requested, dump to file
+    if (!Options::JsonOutputPath().empty())
+    {
+        saber->getBugReport().dumpToJsonFile(Options::JsonOutputPath());
+    }
+
     LLVMModuleSet::releaseLLVMModuleSet();
 
 

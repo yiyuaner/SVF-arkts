@@ -81,9 +81,13 @@ static const ei_pair ei_pairs[]=
     {"@ohos:file.fs.fs.open",     SaberCheckerAPI::CK_ALLOC},
     {"@ohos:file.fs.fs.openSync", SaberCheckerAPI::CK_ALLOC},
     {"@ohos:file.fs.fileIo.open", SaberCheckerAPI::CK_ALLOC},
+    {"@ohos:file.fs.fs.createStream", SaberCheckerAPI::CK_ALLOC},
+    {"@ohos:file.fs.fs.createRandomAccessFileSync", SaberCheckerAPI::CK_ALLOC},
     {"@ohos:multimedia.image.image.createImageSource", SaberCheckerAPI::CK_ALLOC},
     {"@ohos:multimedia.image.image.createImagePacker", SaberCheckerAPI::CK_ALLOC},
     {"@ohos:data.dataShare.dataShare.createDataShareHelper", SaberCheckerAPI::CK_ALLOC},
+    {"@ohos:file.photoAccessHelper.photoAccessHelper.getPhotoAccessHelper", SaberCheckerAPI::CK_ALLOC},
+    {"@ohos:file.sendablePhotoAccessHelper.sendablePhotoAccessHelper.getPhotoAccessHelper", SaberCheckerAPI::CK_ALLOC},
     // ArkTS indirect allocation APIs (matched via !ark.callee.name metadata)
     {"getAssets", SaberCheckerAPI::CK_ALLOC},
     {"querySql", SaberCheckerAPI::CK_ALLOC},

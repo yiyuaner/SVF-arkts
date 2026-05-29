@@ -1461,3 +1461,31 @@ void *arkts_ohos_dataShare_createDataShareHelper(void *funcObj, void *newTarget,
 {
     return NULL;
 }
+
+__attribute__((annotate("ALLOC_HEAP_RET"), annotate("AllocSize:UNKNOWN")))
+void *arkts_ohos_fs_createStream(void *funcObj, void *newTarget, void *external, void *path, void *mode) asm("@ohos:file.fs.fs.createStream");
+void *arkts_ohos_fs_createStream(void *funcObj, void *newTarget, void *external, void *path, void *mode)
+{
+    return NULL;
+}
+
+__attribute__((annotate("ALLOC_HEAP_RET"), annotate("AllocSize:UNKNOWN")))
+void *arkts_ohos_fs_createRandomAccessFileSync(void *funcObj, void *newTarget, void *external, ...) asm("@ohos:file.fs.fs.createRandomAccessFileSync");
+void *arkts_ohos_fs_createRandomAccessFileSync(void *funcObj, void *newTarget, void *external, ...)
+{
+    return NULL;
+}
+
+__attribute__((annotate("ALLOC_HEAP_RET"), annotate("AllocSize:UNKNOWN")))
+void *arkts_ohos_photoAccessHelper_getPhotoAccessHelper(void *funcObj, void *newTarget, void *external, void *context) asm("@ohos:file.photoAccessHelper.photoAccessHelper.getPhotoAccessHelper");
+void *arkts_ohos_photoAccessHelper_getPhotoAccessHelper(void *funcObj, void *newTarget, void *external, void *context)
+{
+    return NULL;
+}
+
+__attribute__((annotate("ALLOC_HEAP_RET"), annotate("AllocSize:UNKNOWN")))
+void *arkts_ohos_sendablePhotoAccessHelper_getPhotoAccessHelper(void *funcObj, void *newTarget, void *external, void *context) asm("@ohos:file.sendablePhotoAccessHelper.sendablePhotoAccessHelper.getPhotoAccessHelper");
+void *arkts_ohos_sendablePhotoAccessHelper_getPhotoAccessHelper(void *funcObj, void *newTarget, void *external, void *context)
+{
+    return NULL;
+}

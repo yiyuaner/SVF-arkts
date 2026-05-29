@@ -82,6 +82,7 @@ static const ei_pair ei_pairs[]=
     {"@ohos:file.fs.fs.openSync", SaberCheckerAPI::CK_ALLOC},
     {"@ohos:file.fs.fileIo.open", SaberCheckerAPI::CK_ALLOC},
     {"@ohos:multimedia.image.image.createImageSource", SaberCheckerAPI::CK_ALLOC},
+    {"@ohos:multimedia.image.image.createImagePacker", SaberCheckerAPI::CK_ALLOC},
 
     {"VOS_MemFree", SaberCheckerAPI::CK_FREE},
     {"cfree", SaberCheckerAPI::CK_FREE},

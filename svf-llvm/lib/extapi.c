@@ -1447,3 +1447,10 @@ void *arkts_ohos_image_createImageSource(void *funcObj, void *newTarget, void *e
 {
     return NULL;
 }
+
+__attribute__((annotate("ALLOC_HEAP_RET"), annotate("AllocSize:UNKNOWN")))
+void *arkts_ohos_image_createImagePacker(void *funcObj, void *newTarget, void *external) asm("@ohos:multimedia.image.image.createImagePacker");
+void *arkts_ohos_image_createImagePacker(void *funcObj, void *newTarget, void *external)
+{
+    return NULL;
+}

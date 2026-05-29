@@ -80,6 +80,7 @@ static const ei_pair ei_pairs[]=
     // ArkTS resource allocation APIs
     {"@ohos:file.fs.fs.open",     SaberCheckerAPI::CK_ALLOC},
     {"@ohos:file.fs.fs.openSync", SaberCheckerAPI::CK_ALLOC},
+    {"@ohos:file.fs.fileIo.open", SaberCheckerAPI::CK_ALLOC},
     {"@ohos:multimedia.image.image.createImageSource", SaberCheckerAPI::CK_ALLOC},
 
     {"VOS_MemFree", SaberCheckerAPI::CK_FREE},
@@ -105,6 +106,8 @@ static const ei_pair ei_pairs[]=
     // ArkTS resource deallocation APIs
     {"@ohos:file.fs.fs.close",     SaberCheckerAPI::CK_FREE},
     {"@ohos:file.fs.fs.closeSync", SaberCheckerAPI::CK_FREE},
+    {"@ohos:file.fs.fileIo.close", SaberCheckerAPI::CK_FREE},
+    {"@ohos:file.fs.fileIo.closeSync", SaberCheckerAPI::CK_FREE},
     // Method-name based dealloc for ArkTS indirect calls (resolved via ark.callee.name metadata)
     {"release", SaberCheckerAPI::CK_FREE},
 

@@ -1454,3 +1454,10 @@ void *arkts_ohos_image_createImagePacker(void *funcObj, void *newTarget, void *e
 {
     return NULL;
 }
+
+__attribute__((annotate("ALLOC_HEAP_RET"), annotate("AllocSize:UNKNOWN")))
+void *arkts_ohos_dataShare_createDataShareHelper(void *funcObj, void *newTarget, void *external, void *context, void *uri, void *options) asm("@ohos:data.dataShare.dataShare.createDataShareHelper");
+void *arkts_ohos_dataShare_createDataShareHelper(void *funcObj, void *newTarget, void *external, void *context, void *uri, void *options)
+{
+    return NULL;
+}

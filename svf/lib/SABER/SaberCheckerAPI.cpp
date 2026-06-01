@@ -91,6 +91,10 @@ static const ei_pair ei_pairs[]=
     // ArkTS indirect allocation APIs (matched via !ark.callee.name metadata)
     {"getAssets", SaberCheckerAPI::CK_ALLOC},
     {"querySql", SaberCheckerAPI::CK_ALLOC},
+    {"createDataShareHelper", SaberCheckerAPI::CK_ALLOC},
+    {"createStream", SaberCheckerAPI::CK_ALLOC},
+    {"createPixelMap", SaberCheckerAPI::CK_ALLOC},
+    {"createPixelMapSync", SaberCheckerAPI::CK_ALLOC},
 
     {"VOS_MemFree", SaberCheckerAPI::CK_FREE},
     {"cfree", SaberCheckerAPI::CK_FREE},

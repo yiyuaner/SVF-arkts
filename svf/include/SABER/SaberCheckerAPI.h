@@ -120,19 +120,41 @@ public:
     }
     /// String-keyed lookup for ArkTS indirect deallocations whose callee is only
     /// known via metadata (e.g. method name "release" from `!ark.callee.name`).
+    /// Supports suffix matching: "arg2.rdbStore.querySql" matches table entry "querySql".
     inline bool isMemDeallocByName(const std::string& name) const
     {
         if (name.empty()) return false;
         TDAPIMap::const_iterator it = tdAPIMap.find(name);
-        return it != tdAPIMap.end() && it->second == CK_FREE;
+        if (it != tdAPIMap.end() && it->second == CK_FREE)
+            return true;
+        // Suffix match: extract last segment after '.'
+        std::size_t dotPos = name.rfind('.');
+        if (dotPos != std::string::npos)
+        {
+            std::string suffix = name.substr(dotPos + 1);
+            it = tdAPIMap.find(suffix);
+            return it != tdAPIMap.end() && it->second == CK_FREE;
+        }
+        return false;
     }
     /// String-keyed lookup for ArkTS indirect allocations whose callee is only
     /// known via metadata (e.g. method name from `!ark.callee.name`).
+    /// Supports suffix matching: "arg2.rdbStore.querySql" matches table entry "querySql".
     inline bool isMemAlloc(const std::string& name) const
     {
         if (name.empty()) return false;
         TDAPIMap::const_iterator it = tdAPIMap.find(name);
-        return it != tdAPIMap.end() && it->second == CK_ALLOC;
+        if (it != tdAPIMap.end() && it->second == CK_ALLOC)
+            return true;
+        // Suffix match: extract last segment after '.'
+        std::size_t dotPos = name.rfind('.');
+        if (dotPos != std::string::npos)
+        {
+            std::string suffix = name.substr(dotPos + 1);
+            it = tdAPIMap.find(suffix);
+            return it != tdAPIMap.end() && it->second == CK_ALLOC;
+        }
+        return false;
     }
     //@}
 

@@ -72,6 +72,39 @@ else()
   list(FILTER LLVM_LIBRARIES EXCLUDE REGEX "^LLVMSvf(Core|LLVM)$|^LLVMSVFAnalysis$")
 endif()
 
+# Force LLVM's transitive system deps (zlib, terminfo) to use static archives so
+# resulting binaries do not depend on libz.so/libtinfo.so at runtime.
+set(_svf_orig_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
+set(CMAKE_FIND_LIBRARY_SUFFIXES "${CMAKE_STATIC_LIBRARY_SUFFIX}")
+find_library(SVF_STATIC_ZLIB NAMES z)
+find_library(SVF_STATIC_TINFO NAMES tinfo terminfo curses ncurses ncursesw)
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${_svf_orig_suffixes})
+
+if(NOT SVF_STATIC_ZLIB)
+  message(FATAL_ERROR "libz.a (static zlib) not found; required for static linking")
+endif()
+if(NOT SVF_STATIC_TINFO)
+  message(FATAL_ERROR "libtinfo.a (static terminfo) not found; required for static linking")
+endif()
+message(STATUS "Static zlib:    ${SVF_STATIC_ZLIB}")
+message(STATUS "Static tinfo:   ${SVF_STATIC_TINFO}")
+
+# Override the imported targets that LLVM's exports reference. LLVM's
+# LLVMSupport target has INTERFACE_LINK_LIBRARIES that include ZLIB::ZLIB and
+# Terminfo::terminfo as imported targets - we point those at static archives.
+if(NOT TARGET ZLIB::ZLIB)
+  add_library(ZLIB::ZLIB STATIC IMPORTED)
+endif()
+set_target_properties(ZLIB::ZLIB PROPERTIES
+  IMPORTED_LOCATION "${SVF_STATIC_ZLIB}"
+)
+if(NOT TARGET Terminfo::terminfo)
+  add_library(Terminfo::terminfo STATIC IMPORTED)
+endif()
+set_target_properties(Terminfo::terminfo PROPERTIES
+  IMPORTED_LOCATION "${SVF_STATIC_TINFO}"
+)
+
 # Search in the executables dir for this LLVM's clang instance
 find_program(LLVM_CLANG clang ${LLVM_BINARY_DIR} ${LLVM_TOOLS_BINARY_DIR})
 if(NOT LLVM_CLANG)

@@ -22,6 +22,11 @@ foreach(_tool IN LISTS ALL_TOOLS)
   # Link the SvfLLVM library against SVF's core & LLVM libraries
   target_link_libraries(${_tool} PRIVATE SvfCore SvfLLVM)
 
+  # Statically link the C++ and GCC runtime so the binary is self-contained.
+  # Combined with the static libz3/libz/libtinfo overrides, the executable
+  # depends only on glibc (libc, libm, libdl, libpthread, librt).
+  target_link_options(${_tool} PRIVATE -static-libstdc++ -static-libgcc)
+
   # Ensure that the build artifacts are placed into lib/bin/include relative to the top of the build directory
   set_target_properties(
     ${_tool}

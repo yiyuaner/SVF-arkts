@@ -16,12 +16,25 @@ else()
   endif()
 
   # Fall back to explicit manual header + lib search (prioritise searching $Z3_DIR)
+  # Prefer static archive to produce self-contained binaries
+  set(_z3_orig_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
+  set(CMAKE_FIND_LIBRARY_SUFFIXES "${CMAKE_STATIC_LIBRARY_SUFFIX}")
   find_library(
     Z3_LIBRARY_DIR
     NAMES z3 libz3
     HINTS ${Z3_HOME} $ENV{Z3_HOME} ${Z3_DIR} $ENV{Z3_DIR}
     PATH_SUFFIXES bin lib ${CMAKE_INSTALL_BINDIR} ${CMAKE_INSTALL_LIBDIR}
   )
+  if(NOT Z3_LIBRARY_DIR)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ${_z3_orig_suffixes})
+    find_library(
+      Z3_LIBRARY_DIR
+      NAMES z3 libz3
+      HINTS ${Z3_HOME} $ENV{Z3_HOME} ${Z3_DIR} $ENV{Z3_DIR}
+      PATH_SUFFIXES bin lib ${CMAKE_INSTALL_BINDIR} ${CMAKE_INSTALL_LIBDIR}
+    )
+  endif()
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ${_z3_orig_suffixes})
   find_path(
     Z3_INCLUDE_DIR
     NAMES z3++.h

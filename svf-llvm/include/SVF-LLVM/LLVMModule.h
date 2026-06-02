@@ -85,6 +85,7 @@ private:
     std::vector<std::unique_ptr<Module>> owned_modules;
     std::vector<std::reference_wrapper<Module>> modules;
 
+    std::string extModuleName;
     /// Record some "sse_" function declarations used in other ext function definition, e.g., svf_ext_foo(), and svf_ext_foo() used in app functions
     FunctionSetType ExtFuncsVec;
     /// Record annotations of function in extapi.bc
@@ -369,7 +370,7 @@ public:
         for (size_t i = 0; i < getModuleNum(); ++i)
         {
             Module& module = getModuleRef(i);
-            if (module.getName().str() != ExtAPI::getExtAPI()->getExtBcPath())
+            if (module.getName().str() != extModuleName)
             {
                 return &module;
             }

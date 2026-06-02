@@ -129,6 +129,16 @@ install(
   RENAME ${SVF_EXTAPI_BC_NAME}
 )
 
+# Generate a C++ source file embedding the extapi IR as a string literal
+set(EXTAPI_EMBED_CPP ${CMAKE_CURRENT_BINARY_DIR}/extapi_embedded.cpp)
+add_custom_command(
+  OUTPUT ${EXTAPI_EMBED_CPP}
+  COMMAND ${CMAKE_COMMAND} -DINPUT_FILE=${SVF_BUILD_EXTAPI_BC} -DOUTPUT_FILE=${EXTAPI_EMBED_CPP}
+          -P ${CMAKE_CURRENT_LIST_DIR}/cmake/EmbedExtAPI.cmake
+  COMMENT "Embedding extapi IR into C++ source..."
+  DEPENDS ${SVF_BUILD_EXTAPI_BC} ${CMAKE_CURRENT_LIST_DIR}/cmake/EmbedExtAPI.cmake
+)
+
 # =================================================================================
 # Main SVF LLVM library definition
 # =================================================================================
@@ -155,7 +165,7 @@ target_sources(
   PUBLIC FILE_SET HEADERS
                   BASE_DIRS ${CMAKE_CURRENT_LIST_DIR}/include
                   FILES ${SVF_LLVM_HEADERS}
-  PRIVATE ${SVF_LLVM_SOURCES}
+  PRIVATE ${SVF_LLVM_SOURCES} ${EXTAPI_EMBED_CPP}
 )
 
 # GCC can report false-positive -Wmaybe-uninitialized warnings from LLVM's

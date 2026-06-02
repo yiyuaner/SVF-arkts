@@ -44,6 +44,8 @@
 #include "SVF-LLVM/ICFGBuilder.h"
 #include "Graphs/CallGraph.h"
 #include "Util/CallGraphBuilder.h"
+#include "SVF-LLVM/ExtAPIEmbedded.h"
+#include "llvm/Support/MemoryBuffer.h"
 
 #if LLVM_VERSION_MAJOR > 16
 #include <llvm/Passes/PassBuilder.h>
@@ -385,41 +387,45 @@ void LLVMModuleSet::loadModules(const std::vector<std::string> &moduleNameVec)
 
 void LLVMModuleSet::loadExtAPIModules()
 {
-    // This function loads the ExtAPI bitcode file as an LLVM module. Note that it is important that
-    // the same LLVMContext object is used to load this bitcode file as is used by the other modules
-    // being analysed.
-    // When the modules are loaded from bitcode files (i.e. passing filenames to files containing
-    // LLVM IR to `buildSVFModule({file1.bc, file2.bc, ...})) the context is created while loading
-    // the modules in `loadModules()`, which populates this->modules and this->owned_modules.
-    // If, however, an LLVM Module object is passed to `buildSVFModule` (e.g. from an LLVM pass),
-    // the context should be retrieved from the module itself (note that the garbage collection from
-    // `std::unique_ptr<LLVMContext> LLVMModuleSet::owned_ctx` should be avoided in this case). This
-    // function populates only this->modules.
-    // In both cases, fetching the context from the main LLVM module (through `getContext`) works
     assert(!empty() && "LLVMModuleSet contains no modules; cannot load ExtAPI module without LLVMContext!");
 
-    // Load external API module (extapi.bc)
-    if (!ExtAPI::getExtAPI()->getExtBcPath().empty())
+    SMDiagnostic Err;
+    std::unique_ptr<Module> mod;
+
+    if (!Options::ExtAPIPath().empty())
     {
-        std::string extModuleName = ExtAPI::getExtAPI()->getExtBcPath();
+        extModuleName = Options::ExtAPIPath();
         if (!LLVMUtil::isIRFile(extModuleName))
         {
             SVFUtil::errs() << "not an external IR file: " << extModuleName << std::endl;
             abort();
         }
-        SMDiagnostic Err;
-        std::unique_ptr<Module> mod = parseIRFile(extModuleName, Err, getContext());
+        mod = parseIRFile(extModuleName, Err, getContext());
         if (mod == nullptr)
         {
             SVFUtil::errs() << "load external module: " << extModuleName << "failed!!\n\n";
             Err.print("SVFModuleLoader", llvm::errs());
             abort();
         }
-        // The module of extapi.bc needs to be inserted before applications modules, like std::vector<std::reference_wrapper<Module>> modules{extapi_module, app_module}.
-        // Otherwise, when overwriting the app function with SVF extern function, the corresponding SVFFunction of the extern function will not be found.
-        modules.insert(modules.begin(), *mod);
-        owned_modules.insert(owned_modules.begin(),std::move(mod));
     }
+    else
+    {
+        extModuleName = "extapi_embedded.ll";
+        auto buf = llvm::MemoryBuffer::getMemBuffer(
+            llvm::StringRef(extapi_ir_data, extapi_ir_size),
+            extModuleName,
+            /*RequiresNullTerminator=*/false);
+        mod = parseIR(*buf, Err, getContext());
+        if (mod == nullptr)
+        {
+            SVFUtil::errs() << "Failed to parse embedded extapi IR!\n";
+            Err.print("SVFModuleLoader", llvm::errs());
+            abort();
+        }
+    }
+
+    modules.insert(modules.begin(), *mod);
+    owned_modules.insert(owned_modules.begin(), std::move(mod));
 }
 
 std::vector<const Function* > LLVMModuleSet::getLLVMGlobalFunctions(const GlobalVariable *global)
@@ -692,8 +698,7 @@ void LLVMModuleSet::buildFunToFunMap()
 
     for (Module& mod : modules)
     {
-        // extapi.bc functions
-        if (mod.getName().str() == ExtAPI::getExtAPI()->getExtBcPath())
+        if (mod.getName().str() == extModuleName)
         {
             collectExtFunAnnotations(&mod);
             extModule = &mod;

@@ -182,6 +182,10 @@ public:
     }
     //@}
 
+    /// Return true if this is a state-entering method (e.g., beginTransaction)
+    /// that should be tracked via receiver rather than return value.
+    bool isStateEntering(const std::string& funName) const;
+
 };
 
 } // End namespace SVF

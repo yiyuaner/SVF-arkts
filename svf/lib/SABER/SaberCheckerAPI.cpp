@@ -95,6 +95,8 @@ static const ei_pair ei_pairs[]=
     {"createStream", SaberCheckerAPI::CK_ALLOC},
     {"createPixelMap", SaberCheckerAPI::CK_ALLOC},
     {"createPixelMapSync", SaberCheckerAPI::CK_ALLOC},
+    // ArkTS state-entering methods (tracked via receiver, not return value)
+    {"beginTransaction", SaberCheckerAPI::CK_ALLOC},
 
     {"VOS_MemFree", SaberCheckerAPI::CK_FREE},
     {"cfree", SaberCheckerAPI::CK_FREE},
@@ -124,6 +126,9 @@ static const ei_pair ei_pairs[]=
     // Method-name based dealloc for ArkTS indirect calls (resolved via ark.callee.name metadata)
     {"release", SaberCheckerAPI::CK_FREE},
     {"close", SaberCheckerAPI::CK_FREE},
+    // ArkTS state-exiting methods (matched via receiver)
+    {"commit", SaberCheckerAPI::CK_FREE},
+    {"rollBack", SaberCheckerAPI::CK_FREE},
 
     {"fopen", SaberCheckerAPI::CK_FOPEN},
     {"\01_fopen", SaberCheckerAPI::CK_FOPEN},
@@ -197,6 +202,15 @@ void SaberCheckerAPI::init()
     }
 }
 
+bool SaberCheckerAPI::isStateEntering(const std::string& funName) const
+{
+    static const set<string> stateEnteringFuns = {"beginTransaction"};
+    string lastSeg = funName;
+    size_t dotPos = funName.rfind('.');
+    if (dotPos != string::npos)
+        lastSeg = funName.substr(dotPos + 1);
+    return stateEnteringFuns.count(lastSeg) > 0;
+}
 
 
 

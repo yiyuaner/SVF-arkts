@@ -45,6 +45,7 @@ void LeakChecker::initSrcs()
             eit = pag->getCallSiteRets().end(); it!=eit; ++it)
     {
         const RetICFGNode* cs = it->first;
+        const CallICFGNode* callNode = cs->getCallICFGNode();
         /// if this callsite return reside in a dead function then we do not care about its leaks
         /// for example instruction `int* p = malloc(size)` is in a dead function, then program won't allocate this memory
         /// for example a customized malloc `int p = malloc()` returns an integer value, then program treat it as a system malloc
@@ -110,11 +111,28 @@ void LeakChecker::initSrcs()
         // ArkTS: Handle indirect allocation calls with !ark.callee.name metadata.
         // Similar to initSnks(), if the callgraph doesn't resolve the indirect call,
         // check if the call target name matches a known allocator.
-        const CallICFGNode* callNode = cs->getCallICFGNode();
         if (callees.empty() && callNode->isIndirectCall())
         {
             const std::string& arkName = callNode->getArkCalleeName();
-            if (SaberCheckerAPI::getCheckerAPI()->isMemAlloc(arkName))
+            if (SaberCheckerAPI::getCheckerAPI()->isStateEntering(arkName))
+            {
+                // State-entering methods (e.g., beginTransaction): track the receiver
+                // (arg[2] in ArkTS calling convention) as the source, not the return value.
+                const SVFIR::ValVarList& arglist = pag->getCallSiteArgsList(callNode);
+                if (arglist.size() > 2)
+                {
+                    const SVFVar* recv = arglist[2];
+                    if (recv->isPointer())
+                    {
+                        SVFUtil::outs() << "[ArkTS State-Entering Source] method name: " << arkName
+                                       << " at " << callNode->getSourceLoc() << "\n";
+                        const SVFGNode* node = getSVFG()->getActualParmVFGNode(recv, callNode);
+                        addToSources(node);
+                        addSrcToCSID(node, callNode);
+                    }
+                }
+            }
+            else if (SaberCheckerAPI::getCheckerAPI()->isMemAlloc(arkName))
             {
                 SVFUtil::outs() << "[ArkTS Indirect Source] method name: " << arkName
                                << " at " << callNode->getSourceLoc() << "\n";

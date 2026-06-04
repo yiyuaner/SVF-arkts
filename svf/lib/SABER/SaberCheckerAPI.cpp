@@ -97,6 +97,9 @@ static const ei_pair ei_pairs[]=
     {"createPixelMapSync", SaberCheckerAPI::CK_ALLOC},
     // ArkTS state-entering methods (tracked via receiver, not return value)
     {"beginTransaction", SaberCheckerAPI::CK_ALLOC},
+    // Timer allocators (ArkTS / JS builtins, declared as global externs)
+    {"setTimeout",  SaberCheckerAPI::CK_ALLOC},
+    {"setInterval", SaberCheckerAPI::CK_ALLOC},
 
     {"VOS_MemFree", SaberCheckerAPI::CK_FREE},
     {"cfree", SaberCheckerAPI::CK_FREE},
@@ -129,6 +132,9 @@ static const ei_pair ei_pairs[]=
     // ArkTS state-exiting methods (matched via receiver)
     {"commit", SaberCheckerAPI::CK_FREE},
     {"rollBack", SaberCheckerAPI::CK_FREE},
+    // Timer deallocators
+    {"clearTimeout",  SaberCheckerAPI::CK_FREE},
+    {"clearInterval", SaberCheckerAPI::CK_FREE},
 
     {"fopen", SaberCheckerAPI::CK_FOPEN},
     {"\01_fopen", SaberCheckerAPI::CK_FOPEN},

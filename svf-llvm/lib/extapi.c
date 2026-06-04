@@ -1489,3 +1489,29 @@ void *arkts_ohos_sendablePhotoAccessHelper_getPhotoAccessHelper(void *funcObj, v
 {
     return NULL;
 }
+
+/*
+ * Timer APIs (JavaScript / ArkTS builtins).
+ *
+ * Although these are JS builtins (not module-prefixed @ohos: APIs), in
+ * the application's LLVM IR they appear as undeclared externals
+ * @setTimeout, @setInterval, @clearTimeout, @clearInterval with
+ * the same i8* (i8*, ...) signature as the @ohos APIs. Annotating the
+ * return as a heap allocation ensures SVF treats the timer handle as a
+ * pointer it can track through the SVFG.
+ *
+ * The C names match the link names directly (no asm-label needed).
+ */
+__attribute__((annotate("ALLOC_HEAP_RET"), annotate("AllocSize:UNKNOWN")))
+void *setTimeout(void *funcObj, ...);
+void *setTimeout(void *funcObj, ...) { return NULL; }
+
+__attribute__((annotate("ALLOC_HEAP_RET"), annotate("AllocSize:UNKNOWN")))
+void *setInterval(void *funcObj, ...);
+void *setInterval(void *funcObj, ...) { return NULL; }
+
+void *clearTimeout(void *funcObj, ...);
+void *clearTimeout(void *funcObj, ...) { return NULL; }
+
+void *clearInterval(void *funcObj, ...);
+void *clearInterval(void *funcObj, ...) { return NULL; }

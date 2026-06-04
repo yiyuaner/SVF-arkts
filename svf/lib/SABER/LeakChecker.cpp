@@ -148,6 +148,10 @@ void LeakChecker::initSrcs()
         }
     }
 
+    // ArkTS subscription leaks: detected directly (not via SVFG slicing) at
+    // the end of source initialization so that they appear in the same bug
+    // report. See detectSubscriptionLeaks() for rationale.
+    detectSubscriptionLeaks();
 }
 
 /*!
@@ -227,6 +231,91 @@ void LeakChecker::initSnks()
                     }
                 }
             }
+        }
+    }
+}
+
+/*!
+ * Walk the def chain backward through Copy edges and return true if it
+ * originates at a `FunValVar` (a constant function-pointer SVFVar).
+ *
+ * In ArkTS, an inline anonymous closure `(status) => { ... }` passed as the
+ * callback to `display.on` lowers in LLVM IR to:
+ *     i8* bitcast (i8* (...)* @\"...closure_name\" to i8*)
+ * SVFIRBuilder may render this as either a direct FunValVar reference or a
+ * sequence of Copy statements (one per ConstantExpr step). We accept both.
+ */
+bool LeakChecker::isConstantFunctionCallback(const SVFVar* var) const
+{
+    Set<NodeID> visited;
+    const SVFVar* cur = var;
+    // Bound the walk to avoid pathological chains.
+    int steps = 0;
+    while (cur && visited.insert(cur->getId()).second && steps++ < 8)
+    {
+        if (SVFUtil::isa<FunValVar>(cur))
+            return true;
+        const SVFStmt::SVFStmtSetTy& copies =
+            const_cast<SVFVar*>(cur)->getIncomingEdges(SVFStmt::Copy);
+        if (copies.size() == 1)
+        {
+            cur = (*copies.begin())->getSrcNode();
+            continue;
+        }
+        break;
+    }
+    return false;
+}
+
+/*!
+ * Detect ArkTS event-listener leaks at `display.on` call sites whose
+ * callback (arg[4]) is a constant function pointer (an inline anonymous
+ * closure). Such callbacks have no stable reference, so no later
+ * `display.off` call can possibly remove them — they leak by construction.
+ *
+ * This bypasses the SVFG source-sink machinery for two reasons:
+ *   1. `@"@ohos:display.display.on"` is a declared external; arg-actual
+ *      SVFG nodes have no outgoing CallDirSVFGEdge, so forward traversal
+ *      from such a source reaches no sink and would falsely flag every
+ *      `display.on` call as a leak.
+ *   2. Pairing `on(field)`/`off(field)` across different methods would
+ *      require field-sensitive MSSA-Phi flow over ArkTS hash-based field
+ *      offsets, which is fragile.
+ *
+ * Reports are added directly to the inherited `report` member; the harness
+ * picks them up from the JSON dump.
+ */
+void LeakChecker::detectSubscriptionLeaks()
+{
+    SVFIR* pag = getPAG();
+    for (SVFIR::CSToArgsListMap::iterator it = pag->getCallSiteArgsMap().begin(),
+            eit = pag->getCallSiteArgsMap().end(); it != eit; ++it)
+    {
+        const CallICFGNode* callNode = it->first;
+        CallGraph::FunctionSet callees;
+        getCallgraph()->getCallees(callNode, callees);
+        for (CallGraph::FunctionSet::const_iterator cit = callees.begin(),
+                ecit = callees.end(); cit != ecit; ++cit)
+        {
+            const FunObjVar* fun = *cit;
+            if (!SaberCheckerAPI::getCheckerAPI()->isSubscriptionOn(fun))
+                continue;
+            const SVFIR::ValVarList& arglist = it->second;
+            // ArkTS calling convention:
+            //   (funcObj, newTarget, this, eventName, callback, ...)
+            if (arglist.size() <= 4)
+                continue;
+            const SVFVar* cb = arglist[4];
+            if (!isConstantFunctionCallback(cb))
+                continue;
+            SVFUtil::outs() << "[ArkTS Subscription Leak] anonymous callback in "
+                           << fun->getName() << " at "
+                           << callNode->getSourceLoc() << "\n";
+            GenericBug::EventStack eventStack =
+            {
+                SVFBugEvent(SVFBugEvent::SourceInst, callNode)
+            };
+            report.addSaberBug(GenericBug::NEVERFREE, eventStack);
         }
     }
 }

@@ -95,6 +95,19 @@ protected:
     virtual void reportBug(ProgSlice* slice) override;
     //@}
 
+    /// Detect ArkTS event-listener leaks of the form
+    ///   display.on(eventName, anonymousCallback)
+    /// where the callback is a constant function pointer (i.e. an inline
+    /// arrow-function/closure, not a stored field). Such callbacks cannot
+    /// be referenced by a later display.off and therefore leak.
+    /// Reports directly into the bug report — bypasses SVFG slicing because
+    /// display.on/off are declared-external and have no callee body.
+    void detectSubscriptionLeaks();
+
+    /// Helper: walk back through Copy edges from `var` and return true if
+    /// the def chain originates at a `FunValVar` (constant function pointer).
+    bool isConstantFunctionCallback(const SVFVar* var) const;
+
     /// Validate test cases for regression test purpose
     void testsValidation(const ProgSlice* slice);
     void validateSuccessTests(const SVFGNode* source, const FunObjVar* fun);

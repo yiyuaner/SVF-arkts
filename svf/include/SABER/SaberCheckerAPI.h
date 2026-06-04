@@ -52,7 +52,9 @@ public:
         CK_ALLOC,		/// memory allocation
         CK_FREE,      /// memory deallocation
         CK_FOPEN,		/// File open
-        CK_FCLOSE		/// File close
+        CK_FCLOSE,		/// File close
+        CK_SUBSCRIBE_ON,	/// Event listener registration (e.g., display.on)
+        CK_SUBSCRIBE_OFF	/// Event listener deregistration (e.g., display.off)
     };
 
     typedef Map<std::string, CHECKER_TYPE> TDAPIMap;
@@ -179,6 +181,30 @@ public:
     inline bool isFClose(const CallICFGNode* cs) const
     {
         return isFClose(cs->getCalledFunction());
+    }
+    //@}
+
+    /// Return true if this call is an event-listener registration (e.g., display.on)
+    //@{
+    inline bool isSubscriptionOn(const FunObjVar* fun) const
+    {
+        return getType(fun) == CK_SUBSCRIBE_ON;
+    }
+    inline bool isSubscriptionOn(const CallICFGNode* cs) const
+    {
+        return isSubscriptionOn(cs->getCalledFunction());
+    }
+    //@}
+
+    /// Return true if this call is an event-listener deregistration (e.g., display.off)
+    //@{
+    inline bool isSubscriptionOff(const FunObjVar* fun) const
+    {
+        return getType(fun) == CK_SUBSCRIBE_OFF;
+    }
+    inline bool isSubscriptionOff(const CallICFGNode* cs) const
+    {
+        return isSubscriptionOff(cs->getCalledFunction());
     }
     //@}
 

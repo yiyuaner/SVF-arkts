@@ -163,6 +163,17 @@ static const ei_pair ei_pairs[]=
     {"gcry_md_close", SaberCheckerAPI::CK_FCLOSE},
     {"gcry_cipher_close", SaberCheckerAPI::CK_FCLOSE},
 
+    // ArkTS event-listener registration APIs (callback at arg index 4).
+    // Detected as a leak when the callback is an inline anonymous closure
+    // (i.e. a constant function pointer) because no later display.off can
+    // ever reference the same callback value.
+    {"@ohos:display.display.on",  SaberCheckerAPI::CK_SUBSCRIBE_ON},
+
+    // ArkTS event-listener deregistration APIs (callback at arg index 4).
+    // Modeled symmetrically; not currently used by the checker but kept
+    // for future symmetric source/sink work.
+    {"@ohos:display.display.off", SaberCheckerAPI::CK_SUBSCRIBE_OFF},
+
     //This must be the last entry.
     {0, SaberCheckerAPI::CK_DUMMY}
 

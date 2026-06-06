@@ -34,8 +34,40 @@
 #include "Util/Options.h"
 #include "WPA/Andersen.h"
 
+#include <regex>
+
 using namespace SVF;
 using namespace SVFUtil;
+
+namespace
+{
+/// panda2llvm emits each ArkTS closure capture as a module-level global
+/// named "<class>.<method>_env<N>_<M>". These globals are scoped to a single
+/// async-function activation, so SVF's default policy of treating any value
+/// stored into a global as "lives until program exit" produces false negatives
+/// (resource handles stashed in the closure box are reported as safe).
+/// We recognise these env-globals by their suffix and let forward analysis
+/// continue through the store/load chain.
+static bool nameLooksLikeArkTSClosureEnv(const SVF::SVFVar* var)
+{
+    if (!var)
+        return false;
+    static const std::regex re(R"(_env\d+_\d+$)");
+    return std::regex_search(var->getName(), re);
+}
+
+static bool isArkTSClosureEnvGlobal(const SVF::SVFGNode* n)
+{
+    if (!n)
+        return false;
+    if (const SVF::StmtSVFGNode* stmt = SVF::SVFUtil::dyn_cast<SVF::StmtSVFGNode>(n))
+    {
+        return nameLooksLikeArkTSClosureEnv(stmt->getDstNode())
+               || nameLooksLikeArkTSClosureEnv(stmt->getSrcNode());
+    }
+    return false;
+}
+} // end anonymous namespace
 
 /// Initialize analysis
 void SrcSnkDDA::initialize()
@@ -202,8 +234,15 @@ void SrcSnkDDA::FWProcessOutgoingEdge(const DPIm& item, SVFGEdge* edge)
     /// handle globals here
     if(isGlobalSVFGNode(dstNode) || getCurSlice()->isReachGlobal())
     {
-        getCurSlice()->setReachGlobal();
-        return;
+        // ArkTS closure-env globals are not real long-lived globals; they are
+        // per-activation closure boxes emitted by panda2llvm. Tracing through
+        // them is required to detect resource leaks where a handle is stashed
+        // in the env, then closed only on a subset of callback paths.
+        if (!isArkTSClosureEnvGlobal(dstNode))
+        {
+            getCurSlice()->setReachGlobal();
+            return;
+        }
     }
 
 

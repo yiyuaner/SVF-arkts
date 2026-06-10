@@ -408,6 +408,26 @@ void FilePartialCloseBug::printBugToTerminal() const
 cJSON *FullNullPtrDereferenceBug::getBugDescription() const
 {
     cJSON *bugDescription = cJSON_CreateObject();
+
+    cJSON *trace = cJSON_CreateArray();
+    for (const SVFBugEvent &event : bugEventStack)
+    {
+        cJSON *traceStep = cJSON_CreateObject();
+
+        if (event.getEventType() == SVFBugEvent::SourceInst)
+            cJSON_AddStringToObject(traceStep, "type", "dereference");
+        else
+            cJSON_AddStringToObject(traceStep, "type", "unknown");
+
+        cJSON *location = parseLocationToJson(event.getEventLoc());
+        cJSON_AddItemToObject(traceStep, "location", location);
+
+        cJSON_AddStringToObject(traceStep, "llvm_ir", event.getLLVMIR().c_str());
+
+        cJSON_AddItemToArray(trace, traceStep);
+    }
+    cJSON_AddItemToObject(bugDescription, "Trace", trace);
+
     return bugDescription;
 }
 
@@ -420,6 +440,26 @@ void FullNullPtrDereferenceBug::printBugToTerminal() const
 cJSON *PartialNullPtrDereferenceBug::getBugDescription() const
 {
     cJSON *bugDescription = cJSON_CreateObject();
+
+    cJSON *trace = cJSON_CreateArray();
+    for (const SVFBugEvent &event : bugEventStack)
+    {
+        cJSON *traceStep = cJSON_CreateObject();
+
+        if (event.getEventType() == SVFBugEvent::SourceInst)
+            cJSON_AddStringToObject(traceStep, "type", "dereference");
+        else
+            cJSON_AddStringToObject(traceStep, "type", "unknown");
+
+        cJSON *location = parseLocationToJson(event.getEventLoc());
+        cJSON_AddItemToObject(traceStep, "location", location);
+
+        cJSON_AddStringToObject(traceStep, "llvm_ir", event.getLLVMIR().c_str());
+
+        cJSON_AddItemToArray(trace, traceStep);
+    }
+    cJSON_AddItemToObject(bugDescription, "Trace", trace);
+
     return bugDescription;
 }
 

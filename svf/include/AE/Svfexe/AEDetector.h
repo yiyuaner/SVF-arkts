@@ -91,6 +91,8 @@ public:
      */
     virtual void reportBug() = 0;
 
+    virtual SVFBugReport& getBugReport() = 0;
+
     /**
      * @brief Get the kind of the detector.
      * @return The kind of the detector.
@@ -285,6 +287,11 @@ public:
         }
     }
 
+    SVFBugReport& getBugReport() override
+    {
+        return recoder;
+    }
+
     /**
      * @brief Initializes external API buffer overflow check rules.
      */
@@ -414,6 +421,11 @@ public:
                 std::cerr << it.second << "\n---------------------------------------------\n";
             }
         }
+    }
+
+    SVFBugReport& getBugReport() override
+    {
+        return recoder;
     }
 
     /**

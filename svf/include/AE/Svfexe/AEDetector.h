@@ -29,6 +29,7 @@
 #include <SVFIR/SVFIR.h>
 #include <AE/Core/AbstractState.h>
 #include "Util/SVFBugReport.h"
+#include "Util/Options.h"
 
 namespace SVF
 {
@@ -275,7 +276,7 @@ public:
      */
     void reportBug() override
     {
-        if (!nodeToBugInfo.empty())
+        if (!nodeToBugInfo.empty() && Options::JsonOutputPath().empty())
         {
             std::cerr << "######################Buffer Overflow (" + std::to_string(nodeToBugInfo.size())
                       + " found)######################\n";
@@ -411,7 +412,7 @@ public:
      */
     void reportBug() override
     {
-        if (!nodeToBugInfo.empty())
+        if (!nodeToBugInfo.empty() && Options::JsonOutputPath().empty())
         {
             std::cerr << "###################### Nullptr Dereference (" + std::to_string(nodeToBugInfo.size())
                       + " found)######################\n";

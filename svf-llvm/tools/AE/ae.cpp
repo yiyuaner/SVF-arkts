@@ -894,6 +894,22 @@ int main(int argc, char** argv)
         ae.addDetector(std::make_unique<NullptrDerefDetector>());
     ae.runOnModule();
 
+    // If JSON output requested, merge every detector's bug set and dump.
+    if (!Options::JsonOutputPath().empty())
+    {
+        SVFBugReport combined;
+        for (const auto& detector : ae.getDetectors())
+        {
+            for (const GenericBug* bug : detector->getBugReport().getBugSet())
+            {
+                combined.addAbsExecBug(bug->getBugType(),
+                                       bug->getEventStack(),
+                                       0, 0, 0, 0);
+            }
+        }
+        combined.dumpToJsonFile(Options::JsonOutputPath());
+    }
+
     AndersenWaveDiff::releaseAndersenWaveDiff();
     LLVMModuleSet::releaseLLVMModuleSet();
 

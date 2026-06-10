@@ -93,6 +93,7 @@ public:
     virtual void reportBug() = 0;
 
     virtual SVFBugReport& getBugReport() = 0;
+    virtual const SVFBugReport& getBugReport() const = 0;
 
     /**
      * @brief Get the kind of the detector.
@@ -292,6 +293,10 @@ public:
     {
         return recoder;
     }
+    const SVFBugReport& getBugReport() const override
+    {
+        return recoder;
+    }
 
     /**
      * @brief Initializes external API buffer overflow check rules.
@@ -425,6 +430,10 @@ public:
     }
 
     SVFBugReport& getBugReport() override
+    {
+        return recoder;
+    }
+    const SVFBugReport& getBugReport() const override
     {
         return recoder;
     }

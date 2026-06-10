@@ -900,12 +900,7 @@ int main(int argc, char** argv)
         SVFBugReport combined;
         for (const auto& detector : ae.getDetectors())
         {
-            for (const GenericBug* bug : detector->getBugReport().getBugSet())
-            {
-                combined.addAbsExecBug(bug->getBugType(),
-                                       bug->getEventStack(),
-                                       0, 0, 0, 0);
-            }
+            combined.merge(detector->getBugReport());
         }
         combined.dumpToJsonFile(Options::JsonOutputPath());
     }

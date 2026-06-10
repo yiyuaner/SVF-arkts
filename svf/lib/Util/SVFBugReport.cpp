@@ -573,6 +573,15 @@ void SVFBugReport::addSaberBug(GenericBug::BugType bugType, const GenericBug::Ev
     }
 }
 
+void SVFBugReport::merge(SVFBugReport& other)
+{
+    for (const GenericBug* bug : other.bugSet)
+    {
+        bugSet.insert(bug);
+    }
+    other.bugSet.clear();
+}
+
 SVFBugReport::~SVFBugReport()
 {
     for(auto bugIt: bugSet)

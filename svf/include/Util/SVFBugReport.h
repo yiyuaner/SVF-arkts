@@ -367,6 +367,14 @@ public:
     }
 
     /*
+     * function: transfer ownership of every bug from `other` into this report.
+     *      `other` is left with an empty bugSet (its destructor becomes a no-op
+     *      for the transferred pointers, so allocations stay disjoint).
+     * usage: combined.merge(detector->getBugReport())
+     */
+    void merge(SVFBugReport& other);
+
+    /*
      * function: pass file path, open the file and dump bug report as JSON format
      * usage: dumpToFile("/path/to/file")
      */

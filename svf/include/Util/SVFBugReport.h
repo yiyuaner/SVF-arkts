@@ -299,9 +299,9 @@ public:
 
 protected:
     BugSet bugSet;    // maintain bugs
-    double time;     // time (sec)
+    double time{0};     // time (sec)
     std::string mem;       // string memory (KB)
-    double coverage;  // coverage (%)
+    double coverage{0};  // coverage (%)
 
 public:
     // set time, mem and coverage

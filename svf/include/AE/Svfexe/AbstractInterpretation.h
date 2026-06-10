@@ -126,6 +126,11 @@ public:
         detectors.push_back(std::move(detector));
     }
 
+    const std::vector<std::unique_ptr<AEDetector>>& getDetectors() const
+    {
+        return detectors;
+    }
+
     /// Retrieve SVFVar given its ID; asserts if no such variable exists
     inline const SVFVar* getSVFVar(NodeID varId) const
     {

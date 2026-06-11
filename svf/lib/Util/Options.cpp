@@ -844,6 +844,8 @@ const Option<bool> Options::NullDerefCheck(
     "null-deref","Null Pointer Dereference Detection",false);
 const Option<bool> Options::MemoryLeakCheck(
     "leak", "Memory Leak Detection",false);
+const Option<bool> Options::NullDerefCheckSaber(
+    "null-deref-saber", "Null Pointer Dereference Detection (SVFG-based)",false);
 const Option<bool> Options::FileCheck(
     "fileck", "File Open/Close Detection",false);
 const Option<bool> Options::DFreeCheck(

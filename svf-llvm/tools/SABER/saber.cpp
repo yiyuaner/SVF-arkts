@@ -31,6 +31,7 @@
 #include "SABER/LeakChecker.h"
 #include "SABER/FileChecker.h"
 #include "SABER/DoubleFreeChecker.h"
+#include "SABER/NullDerefChecker.h"
 #include "Util/CommandLine.h"
 #include "Util/Options.h"
 #include "Util/Z3Expr.h"
@@ -52,10 +53,12 @@ int main(int argc, char ** argv)
     SVFIR* pag = builder.build();
 
 
-    std::unique_ptr<LeakChecker> saber;
+    std::unique_ptr<SrcSnkDDA> saber;
 
     if(Options::MemoryLeakCheck())
         saber = std::make_unique<LeakChecker>();
+    else if(Options::NullDerefCheckSaber())
+        saber = std::make_unique<NullDerefChecker>();
     else if(Options::FileCheck())
         saber = std::make_unique<FileChecker>();
     else if(Options::DFreeCheck())

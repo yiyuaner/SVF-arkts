@@ -362,7 +362,8 @@ void LLVMModuleSet::loadModules(const std::vector<std::string> &moduleNameVec)
     owned_ctx = std::make_unique<LLVMContext>();
 #if LLVM_VERSION_MAJOR >= 15
     // Disable opaque pointers for LLVM 15+ to support typed pointer bitcode
-    owned_ctx->setOpaquePointers(false);
+    // Note: setOpaquePointers() removed in newer LLVM versions
+    // owned_ctx->setOpaquePointers(false);
 #endif
     for (const std::string& moduleName : moduleNameVec)
     {

@@ -104,6 +104,14 @@ public:
         //pathCondAllocator = nullptr;
     }
 
+    /// We start from here
+    virtual bool runOnModule(SVFIR* pag)
+    {
+        /// start analysis
+        analyze();
+        return false;
+    }
+
     /// Start analysis here
     virtual void analyze();
 

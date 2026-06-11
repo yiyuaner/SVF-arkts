@@ -253,6 +253,8 @@ public:
     static const Option<bool> BufferOverflowCheck;
     /// nullptr dereference checker, Default: false
     static const Option<bool> NullDerefCheck;
+    /// nullptr dereference checker (SVFG-based in saber), Default: false
+    static const Option<bool> NullDerefCheckSaber;
     /// memory leak check, Default: false
     static const Option<bool> MemoryLeakCheck;
     /// file open close checker, Default: false

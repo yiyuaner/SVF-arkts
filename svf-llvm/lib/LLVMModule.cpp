@@ -360,10 +360,11 @@ void LLVMModuleSet::loadModules(const std::vector<std::string> &moduleNameVec)
     // module instance; see the comment(s) in `buildSVFModule` and `loadExtAPIModules()`
 
     owned_ctx = std::make_unique<LLVMContext>();
-#if LLVM_VERSION_MAJOR >= 15
-    // Disable opaque pointers for LLVM 15+ to support typed pointer bitcode
-    // Note: setOpaquePointers() removed in newer LLVM versions
-    // owned_ctx->setOpaquePointers(false);
+#if LLVM_VERSION_MAJOR >= 15 && LLVM_VERSION_MAJOR < 21
+    // Disable opaque pointers for LLVM 15-20 to support typed pointer bitcode
+    // Note: LLVM 21+ removed setOpaquePointers() - opaque pointers are now mandatory,
+    // but panda2llvm outputs typed-pointer IR which LLVM 21 still accepts for reading
+    owned_ctx->setOpaquePointers(false);
 #endif
     for (const std::string& moduleName : moduleNameVec)
     {

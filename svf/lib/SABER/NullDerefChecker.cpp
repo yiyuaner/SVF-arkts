@@ -189,6 +189,16 @@ bool NullDerefChecker::isNullableIndirectFunction(const std::string& funcName) c
 
 /*!
  * Report null dereference bugs
+ *
+ * Reachability semantics (see SrcSnkDDA / ProgSlice):
+ *   - isSomePathReachable(): the source's value flow reaches a sink (a
+ *     dereference) on at least one path.
+ *   - isAllPathReachable(): the source reaches a sink on every path
+ *     (the disjunction of per-sink path guards is valid).
+ *
+ * For NPD the sink is a dereference, so a bug exists exactly when the null
+ * value DOES reach a dereference. This is the inverse of LeakChecker, where
+ * the sink is a free() and the bug is the ABSENCE of flow to the sink.
  */
 void NullDerefChecker::reportBug(ProgSlice* slice)
 {
@@ -197,21 +207,22 @@ void NullDerefChecker::reportBug(ProgSlice* slice)
     // Get the callsite for this source
     const CallICFGNode* cs = getSrcCSID(source);
 
-    if(isAllPathReachable() == false && isSomePathReachable() == false)
+    if(isAllPathReachable() == true)
     {
-        // Full null dereference - null value always reaches a dereference
+        // Full null dereference - null value reaches a dereference on ALL paths
         GenericBug::EventStack eventStack =
         {
             SVFBugEvent(SVFBugEvent::SourceInst, cs)
         };
         report.addSaberBug(GenericBug::FULLNULLPTRDEREFERENCE, eventStack);
     }
-    else if (isAllPathReachable() == false && isSomePathReachable() == true)
+    else if (isSomePathReachable() == true)
     {
-        // Partial null dereference - null value reaches dereference on some paths
+        // Partial null dereference - null value reaches a dereference on SOME paths
         GenericBug::EventStack eventStack;
         slice->evalFinalCond2Event(eventStack);
         eventStack.push_back(SVFBugEvent(SVFBugEvent::SourceInst, cs));
         report.addSaberBug(GenericBug::PARTIALNULLPTRDEREFERENCE, eventStack);
     }
+    // else: null value reaches no dereference — no bug
 }

@@ -145,20 +145,26 @@ bool NullDerefChecker::isNullableReturnFunction(const FunObjVar* fun) const
 
     const std::string& name = fun->getName();
 
-    // ArkTS external APIs that may return null
-    if (name.find("@ohos:multimedia.image.imagecreateImageSource") != std::string::npos ||
-        name.find("@ohos:multimedia.image.imagecreateImagePacker") != std::string::npos ||
+    // ArkTS external APIs that may return null.
+    // NOTE: the leaf member is separated from the namespace object by a '.'
+    // in the IR (e.g. "@ohos:multimedia.image.image.createImageSource"), not
+    // glued on as the stale CLAUDE.md note implied. Names confirmed by grepping
+    // applications_photos.ll (2026-06-14).
+    if (name.find("@ohos:multimedia.image.image.createImageSource") != std::string::npos ||
+        name.find("@ohos:multimedia.image.image.createImagePacker") != std::string::npos ||
         name.find("@ohos:file.fs.fileIo.open") != std::string::npos ||
         name.find("@ohos:file.fs.fileIo.openSync") != std::string::npos ||
         name.find("@ohos:file.fs.fs.open") != std::string::npos ||
         name.find("@ohos:file.fs.fs.openSync") != std::string::npos ||
-        name.find("@ohos:data.dataShare.dataSharecreateDataShareHelper") != std::string::npos)
+        name.find("@ohos:data.dataShare.dataShare.createDataShareHelper") != std::string::npos)
     {
         return true;
     }
 
     // JSON.parse can return null
-    if (name.find("JSON.parse") != std::string::npos ||
+    if (name.find("@JSON.parse") != std::string::npos ||
+        name.find("@ohos:util.json.JSON.parse") != std::string::npos ||
+        name.find("JSON.parse") != std::string::npos ||
         name.find("json.parse") != std::string::npos)
     {
         return true;
